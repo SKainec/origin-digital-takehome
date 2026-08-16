@@ -1,0 +1,36 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ---- Node ----
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+coverage/
+
+# ---- Env / secrets ----
+.env
+.env.*
+!.env.example
+
+# ---- Editors / OS ----
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.swp
+
+# ---- Claude Code ----
+.claude/settings.local.json
