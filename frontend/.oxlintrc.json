@@ -25,6 +25,7 @@
     {
       "files": ["**/*.test.ts", "**/*.test.tsx", "src/test/**"],
       "rules": {
+        "react/only-export-components": "off",
         "typescript/no-non-null-assertion": "off",
         "typescript/no-unsafe-type-assertion": "off"
       }
