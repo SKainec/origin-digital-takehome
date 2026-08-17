@@ -27,6 +27,18 @@ because the Makefile sets the correct working directory and environment.
 `make lint` must pass before any commit. `make ci` adds both test suites and the
 production build — it is the full pipeline equivalent, so run it before pushing.
 
+## Planning — small discrete steps
+
+Before implementing anything non-trivial, break it into the smallest steps that each
+have their own failing test. A step is one behavior, not one feature. State the list
+first, then work it one item at a time — test, implement, green, next.
+
+- Do not build the whole structure up front. Create files when a step needs them, not
+  because a plan predicted them.
+- Each step should be independently reviewable and leave the suite green.
+- If a step turns out to need two tests, it was two steps — split it.
+- Do not implement ahead of the current step, even when the next one is obvious.
+
 ## Test-driven development — non-negotiable
 
 This project is built test-first. When implementing any behavior change:

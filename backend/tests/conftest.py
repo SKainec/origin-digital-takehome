@@ -3,16 +3,16 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from app.config import get_settings
+from app.dependencies import get_event_repository
 from app.main import create_app
 
 
 @pytest.fixture(autouse=True)
-def _clear_settings_cache() -> Iterator[None]:
-    """Drop the cached Settings around every test so `monkeypatch.setenv` works."""
-    get_settings.cache_clear()
+def _clear_event_repository() -> Iterator[None]:
+    """The store is a cached singleton, so events would otherwise leak between tests."""
+    get_event_repository.cache_clear()
     yield
-    get_settings.cache_clear()
+    get_event_repository.cache_clear()
 
 
 @pytest.fixture

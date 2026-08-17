@@ -156,6 +156,18 @@ so the docs cannot drift from the code. On the frontend, `src/api/` maps the
 API's `snake_case` to `camelCase` at one boundary, keeping the rest of the app
 in idiomatic TypeScript.
 
+**Times are stored as UTC instants.** `starts_at` must be timezone-aware and is
+serialized as ISO 8601 with an offset, because JavaScript parses an offsetless
+datetime string as *local* time — a naive value would silently shift by the
+viewer's UTC offset on the way to the browser. The client converts back with
+`toISOString()` on submit and formats with `toLocaleString` for display, so no
+date library is needed: there is no arithmetic, only parse and format.
+
+The tradeoff is that an instant means "19:00 UTC", not "19:00 at the venue". If
+an event's local time needed to survive a DST shift, the right model would be
+wall-clock time plus an IANA zone id rather than an instant. That is beyond this
+exercise, but it is a real distinction rather than an oversight.
+
 **TanStack Query rather than `useEffect` fetching.** Caching, retries, request
 cancellation, and loading/error state come from one dependency instead of being
 re-implemented, incorrectly, per component.
