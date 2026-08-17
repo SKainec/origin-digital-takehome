@@ -1,12 +1,12 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
 
+from app.models.event import Event
 from app.repositories.event_repository import EventRepository
-from tests.factories import store_event
-
-STARTS_AT = datetime(2026, 9, 1, 19, 0, tzinfo=UTC)
+from tests.factories import STARTS_AT, store_event
 
 
 @pytest.fixture
@@ -54,3 +54,29 @@ def test_get_returns_the_stored_event(repo: EventRepository) -> None:
 
 def test_get_returns_none_for_an_unknown_id(repo: EventRepository) -> None:
     assert repo.get(uuid4()) is None
+
+
+def test_update_replaces_the_stored_event(repo: EventRepository) -> None:
+    created = store_event(repo, title="Barista convention")
+
+    updated = repo.update(replace(created, title="Latte art championship"))
+
+    assert updated.id == created.id
+    assert updated.title == "Latte art championship"
+    assert repo.get(created.id) == updated
+    assert repo.list_all() == [updated]
+
+
+def test_update_raises_for_an_unknown_id_rather_than_inserting(repo: EventRepository) -> None:
+    stranger = Event(
+        id=uuid4(),
+        title="Never stored",
+        description="Not in the repository.",
+        starts_at=STARTS_AT,
+        max_capacity=25,
+    )
+
+    with pytest.raises(KeyError):
+        repo.update(stranger)
+
+    assert repo.list_all() == []

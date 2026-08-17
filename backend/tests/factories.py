@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from app.models.event import Event
 from app.repositories.event_repository import EventRepository
 
-STARTS_AT = datetime(2026, 9, 1, 19, 0, tzinfo=UTC)
+STARTS_AT = datetime(2026, 11, 5, 19, 0, tzinfo=UTC)
 
 
 def store_event(

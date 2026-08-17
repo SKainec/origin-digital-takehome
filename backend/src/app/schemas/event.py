@@ -5,7 +5,7 @@ from uuid import UUID
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints
 
 
-class EventCreate(BaseModel):
+class EventRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]

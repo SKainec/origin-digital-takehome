@@ -34,4 +34,8 @@ class EventRepository:
         return self._events.get(event_id)
 
     def update(self, event: Event) -> Event:
-        raise NotImplementedError
+        """Replace an event that already exists. Raises KeyError rather than inserting."""
+        if event.id not in self._events:
+            raise KeyError(event.id)
+        self._events[event.id] = event
+        return event

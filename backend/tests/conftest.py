@@ -12,7 +12,7 @@ NOW = "2026-09-01T19:00:00Z"
 
 @pytest.fixture(autouse=True)
 def _freeze_clock() -> Iterator[None]:
-    """Otherwise a test's hardcoded future date silently rots into the past."""
+    """Pin "now" so a test's hardcoded date cannot rot as the calendar moves past it."""
     with time_machine.travel(NOW, tick=False):
         yield
 

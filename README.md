@@ -75,7 +75,7 @@ other tools. List values are parsed as JSON.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `APP_APP_NAME` | `Event Management API` | Shown in the OpenAPI docs and `/api/health`. |
+| `APP_APP_NAME` | `Event Management API` | Title shown in the OpenAPI docs. |
 | `APP_DEBUG` | `false` | |
 | `APP_CORS_ORIGINS` | `["http://localhost:5173"]` | JSON array of allowed origins. |
 | `VITE_API_URL` | *(empty)* | Points a built frontend at the API. Leave empty in dev — the Vite proxy handles it. |
@@ -111,7 +111,7 @@ Everything runs through `make` from the repo root — `make help` lists them all
 | Run all tests | `make test` |
 | Backend tests only | `make test-backend` |
 | Frontend tests only | `make test-frontend` |
-| Filter backend tests | `make test-backend ARGS="-k health"` |
+| Filter backend tests | `make test-backend ARGS="-k update"` |
 | Format + autofix | `make fmt` |
 | Lint + typecheck | `make lint` |
 | Everything CI runs | `make ci` |
@@ -125,10 +125,16 @@ Run `make ci` before pushing — it is the same set of checks the pipeline runs.
 ```
 backend/
   src/app/
-    main.py      app factory and routes
-    config.py    pydantic-settings configuration
-    schemas.py   request/response models
-  tests/         pytest suite
+    main.py           app factory and middleware
+    config.py         pydantic-settings configuration
+    dependencies.py   Depends() providers, so tests can substitute
+    exceptions.py     domain errors, mapped to responses in exception_handlers.py
+    models/           the domain objects and their structural invariants
+    repositories/     storage and identity
+    services/         business rules
+    routers/          HTTP shape only
+    schemas/          request/response models
+  tests/              pytest suite, mirroring src/app/
 frontend/
   src/
     api/         apiFetch wrapper and one module per resource
@@ -179,6 +185,48 @@ pipeline runs, so "works on my machine" is checkable in one command.
 **Test-first.** Both suites run in CI on every push, with coverage on the
 backend. Conventions are written down in [CLAUDE.md](./CLAUDE.md) rather than
 left implicit.
+
+## Known limitations
+
+The brief specifies in-memory storage. These are the consequences of that
+constraint, listed because they are choices rather than oversights.
+
+**State is per-process.** The repository is held by an `@lru_cache`'d provider,
+which makes it a singleton *within one interpreter*. Running more than one
+worker — `uvicorn --workers 4`, or gunicorn in front — gives each worker its own
+dict. A client that creates an event on worker 2 and then lists events on worker
+1 sees nothing, and a refresh may make it reappear. This is the usual failure
+mode of in-memory state behind a load balancer: intermittent, routing-dependent,
+and invisible in single-worker development. The app is therefore
+single-process-only until the store moves out of the process.
+
+**Nothing survives a restart.** There is no persistence layer. In development
+`--reload` restarts on every file save, so the store empties whenever the
+backend is edited.
+
+**Concurrency safety is an invariant, not a lock.** Every route is `async def`
+and `EventService` is fully synchronous, so a request runs from handler entry to
+return without an `await` — the event loop cannot interleave two requests
+mid-operation, which makes check-then-write atomic without synchronisation.
+Two things break that: declaring a handler `def` (FastAPI runs sync handlers in
+a threadpool, so requests execute in parallel threads), or adding a single
+`await` inside the service. Either would allow two requests to pass a capacity
+check before either writes, overbooking a full event. The fix at that point is a
+`threading.Lock` or `asyncio.Lock` in the repository; it is unnecessary while
+the invariant holds, and stated here because the invariant is otherwise
+invisible.
+
+**`GET /api/events` returns the whole collection.** No pagination and no
+filtering, and the soonest-first ordering sorts the entire store on every
+request. Fine for a dict that lives for the length of one process; the sort is
+in the repository precisely so it becomes `ORDER BY starts_at` when the store is
+a database.
+
+**No authentication**, per the brief. Every endpoint is public and no request
+carries an identity.
+
+The repository pattern is what keeps these contained: replacing the dict means
+rewriting one class, with the service, routers, and tests untouched.
 
 ## Tooling choices
 

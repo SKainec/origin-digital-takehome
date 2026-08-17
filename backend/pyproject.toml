@@ -97,4 +97,4 @@ addopts = [
 pythonpath = ["src"]
 
 [tool.coverage.report]
-exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError"]
+exclude_also = ["if TYPE_CHECKING:"]
