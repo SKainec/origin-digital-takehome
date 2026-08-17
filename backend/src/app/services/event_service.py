@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
+from uuid import UUID
 
-from app.exceptions import EventInPastError
+from app.exceptions import EventInPastError, EventNotFoundError
 from app.models.event import Event
 from app.repositories.event_repository import EventRepository
 
@@ -26,3 +27,12 @@ class EventService:
             starts_at=starts_at,
             max_capacity=max_capacity,
         )
+
+    def list_events(self) -> list[Event]:
+        return self._repo.list_all()
+
+    def get_event(self, event_id: UUID) -> Event:
+        event = self._repo.get(event_id)
+        if event is None:
+            raise EventNotFoundError(f"no event with id {event_id}")
+        return event

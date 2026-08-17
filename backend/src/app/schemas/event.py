@@ -1,11 +1,14 @@
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints
 
 
 class EventCreate(BaseModel):
-    title: str = Field(min_length=1)
+    model_config = ConfigDict(extra="forbid")
+
+    title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
     description: str
     starts_at: AwareDatetime
     max_capacity: int = Field(ge=1)

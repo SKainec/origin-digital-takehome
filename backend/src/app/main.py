@@ -9,7 +9,7 @@ from app.routers import events
 def create_app() -> FastAPI:
     """Build the application.
 
-    Exposed as a factory so tests can build an app against overridden settings.
+    Exposed as a factory so each test gets a fresh app instead of sharing module state.
     """
     settings = get_settings()
     app = FastAPI(title=settings.app_name)

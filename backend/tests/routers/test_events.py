@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import time_machine
 from fastapi.testclient import TestClient
@@ -35,7 +35,64 @@ def test_create_event_in_the_past_returns_409(client: TestClient) -> None:
     }
 
 
+def test_list_events_returns_200_with_the_created_events(client: TestClient) -> None:
+    created = client.post("/api/events", json=PAYLOAD).json()
+
+    response = client.get("/api/events")
+
+    assert response.status_code == 200
+    assert response.json() == [created]
+
+
+def test_list_events_returns_200_with_an_empty_list_when_nothing_is_stored(
+    client: TestClient,
+) -> None:
+    response = client.get("/api/events")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_get_event_returns_200_with_the_event(client: TestClient) -> None:
+    created = client.post("/api/events", json=PAYLOAD).json()
+
+    response = client.get(f"/api/events/{created['id']}")
+
+    assert response.status_code == 200
+    assert response.json() == created
+
+
+def test_get_event_returns_404_for_an_unknown_id(client: TestClient) -> None:
+    unknown = uuid4()
+
+    response = client.get(f"/api/events/{unknown}")
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": f"no event with id {unknown}",
+        "code": "event_not_found",
+    }
+
+
 def test_a_malformed_body_still_returns_422(client: TestClient) -> None:
     response = client.post("/api/events", json={**PAYLOAD, "max_capacity": 0})
+
+    assert response.status_code == 422
+
+
+def test_a_whitespace_only_title_returns_422(client: TestClient) -> None:
+    response = client.post("/api/events", json={**PAYLOAD, "title": "   "})
+
+    assert response.status_code == 422
+
+
+def test_an_unknown_field_returns_422(client: TestClient) -> None:
+    response = client.post("/api/events", json={**PAYLOAD, "maxCapacity": 25})
+
+    assert response.status_code == 422
+
+
+def test_a_malformed_id_returns_422_rather_than_404(client: TestClient) -> None:
+    response = client.get("/api/events/not-a-uuid")
 
     assert response.status_code == 422

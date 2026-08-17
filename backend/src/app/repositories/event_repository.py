@@ -26,8 +26,12 @@ class EventRepository:
         self._events[event.id] = event
         return event
 
+    def list_all(self) -> list[Event]:
+        """Soonest first — the ordering a SQL implementation would push into ORDER BY."""
+        return sorted(self._events.values(), key=lambda event: event.starts_at)
+
     def get(self, event_id: UUID) -> Event | None:
-        raise NotImplementedError
+        return self._events.get(event_id)
 
     def update(self, event: Event) -> Event:
         raise NotImplementedError
