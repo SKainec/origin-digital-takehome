@@ -29,6 +29,9 @@ class EventService:
     def list_events(self) -> list[Event]:
         return self._repo.list_all()
 
+    def event_exists(self, event_id: UUID) -> bool:
+        return self._repo.get(event_id) is not None
+
     def get_event(self, event_id: UUID) -> Event:
         event = self._repo.get(event_id)
         if event is None:
@@ -44,8 +47,9 @@ class EventService:
         starts_at: datetime,
         max_capacity: int,
     ) -> Event:
-        # TODO: once registrations exist, reject a max_capacity below the current
-        # registration count with a 409. Equal is legal — that just closes the event.
+        # Lowering max_capacity below the current registration count is allowed and leaves
+        # the event over-subscribed; nobody is dropped. Further registrations are rejected,
+        # since register() refuses while count >= max_capacity.
         existing = self.get_event(event_id)
 
         return self._repo.update(

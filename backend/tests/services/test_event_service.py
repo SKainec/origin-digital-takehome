@@ -52,6 +52,18 @@ def test_get_event_returns_the_stored_event(repo: EventRepository, service: Even
     assert service.get_event(created.id) == created
 
 
+def test_event_exists_is_true_for_a_stored_event(
+    repo: EventRepository, service: EventService
+) -> None:
+    created = store_event(repo)
+
+    assert service.event_exists(created.id) is True
+
+
+def test_event_exists_is_false_for_an_unknown_id(service: EventService) -> None:
+    assert service.event_exists(uuid4()) is False
+
+
 def test_get_event_raises_for_an_unknown_id(service: EventService) -> None:
     with pytest.raises(EventNotFoundError):
         service.get_event(uuid4())
