@@ -1,6 +1,10 @@
 # Marquee Events
 
-Event management app — FastAPI backend, React/TypeScript frontend.
+Marquee Events is a small event management app: organizers create and edit
+events, and attendees register for them, all against an in-memory store
+behind a typed REST API. It's a FastAPI backend paired with a
+React/TypeScript frontend, built test-first with the business rules —
+capacity, timing, duplicate registration — enforced server-side.
 
 ```
 backend/    Event Management API — uv, ruff, mypy --strict, pytest
@@ -210,13 +214,19 @@ single-process-only until the store moves out of the process.
 backend is edited.
 
 **Concurrency safety is an invariant, not a lock.** Every route is `async def`
-and `EventService` is fully synchronous, so a request runs from handler entry to
-return without an `await` — the event loop cannot interleave two requests
-mid-operation, which makes check-then-write atomic without synchronisation.
-Two things break that: declaring a handler `def` (FastAPI runs sync handlers in
-a threadpool, so requests execute in parallel threads), or adding a single
-`await` inside the service. Either would allow two requests to pass a capacity
-check before either writes, overbooking a full event. The fix at that point is a
+and `EventService`/`RegistrationService` are fully synchronous, so a request
+runs from handler entry to return without an `await` — the event loop cannot
+interleave two requests mid-operation, which makes check-then-write atomic
+without synchronisation. This rests on two documented behaviors, not just this
+codebase's convention: FastAPI dispatches an `async def` path operation
+directly on the event loop, but a plain `def` one is [run in an external
+threadpool](https://fastapi.tiangolo.com/async/#path-operation-functions) —
+i.e. a real OS thread, in parallel; and asyncio's event loop is
+[cooperatively scheduled](https://docs.python.org/3/library/asyncio-task.html#coroutines),
+so a coroutine runs uninterrupted until its next `await`. Two things break the
+invariant: declaring a handler `def` instead of `async def`, or adding a single
+`await` inside a service. Either would let two requests pass a capacity check
+before either writes, overbooking a full event. The fix at that point is a
 `threading.Lock` or `asyncio.Lock` in the repository; it is unnecessary while
 the invariant holds, and stated here because the invariant is otherwise
 invisible.
