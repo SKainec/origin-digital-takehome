@@ -86,3 +86,20 @@ describe('apiFetch', () => {
     });
   });
 });
+
+describe('apiFetch with no response body', () => {
+  it('resolves a 204 delete instead of failing to parse an empty body', async () => {
+    const fetchMock = vi.fn<(path: string, init: RequestInit) => Promise<unknown>>();
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 204,
+      json: () => Promise.reject(new SyntaxError('Unexpected end of JSON input')),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      apiFetch<void>('/api/events/7/registrations/a%40b.com', { method: 'DELETE' }),
+    ).resolves.toBeUndefined();
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ method: 'DELETE' });
+  });
+});

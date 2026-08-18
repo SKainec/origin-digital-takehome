@@ -35,8 +35,9 @@ class RegistrationService:
         self._registrations.add(event_id=event_id, email=email)
 
     def cancel(self, event_id: UUID, *, email: str) -> None:
-        # Deliberately not guarded by the date rule: the brief restricts registering for a
-        # started event, and blocking cancellation on top of that would be an invention.
+        # No past-event check here: someone registered for an event that has since
+        # started still has a legitimate reason to cancel, so the date rule only
+        # applies to register(), not cancel().
         if not self._events.event_exists(event_id):
             raise EventNotFoundError(f"no event with id {event_id}")
 

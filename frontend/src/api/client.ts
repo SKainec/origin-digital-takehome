@@ -7,7 +7,6 @@ const BASE_URL = import.meta.env['VITE_API_URL'] ?? '';
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string | undefined;
-  /** Wire field name to message, present only for validation failures. */
   readonly fieldErrors: Record<string, string> | undefined;
 
   constructor(
@@ -80,7 +79,7 @@ async function toApiError(response: Response, path: string): Promise<ApiError> {
 }
 
 export interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT';
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: unknown;
   signal?: AbortSignal;
 }
@@ -99,6 +98,10 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   if (!response.ok) {
     throw await toApiError(response, path);
   }
+
+  // A 204 carries no body at all, so parsing it would throw on the empty string.
+  // oxlint-disable-next-line no-unsafe-type-assertion -- the caller asks for void
+  if (response.status === 204) return undefined as T;
 
   const data: unknown = await response.json();
   // oxlint-disable-next-line no-unsafe-type-assertion -- generic JSON reader

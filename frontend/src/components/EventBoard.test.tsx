@@ -92,6 +92,34 @@ describe('EventBoard', () => {
     expect(within(dialog).getByLabelText(/capacity/i)).toHaveValue(25);
   });
 
+  it('opens that row’s registrations in a dialog', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((path: string) =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve(path.endsWith('/registrations') ? ['sarah@example.com'] : EVENTS),
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+
+    render(<EventBoard />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Barista convention')).toBeInTheDocument();
+    });
+
+    const firstRow = screen.getAllByRole('row')[1];
+    if (firstRow === undefined) throw new Error('expected an event row');
+    await user.click(within(firstRow).getByRole('button', { name: /registrations/i }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(await within(dialog).findByText('sarah@example.com')).toBeInTheDocument();
+  });
+
   it('shows skeleton rows while the events are loading', () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})));
 

@@ -2,6 +2,7 @@ import { ApiError } from '@/api/client';
 import { useEvents } from '@/api/events';
 import { AddEventDialog } from '@/components/AddEventDialog';
 import { EditEventDialog } from '@/components/EditEventDialog';
+import { RegistrationsDialog } from '@/components/RegistrationsDialog';
 import {
   Table,
   TableBody,
@@ -59,6 +60,7 @@ export function EventBoard() {
             <TableCell className="font-mono tabular-nums">{event.maxCapacity}</TableCell>
             <TableCell>—</TableCell>
             <TableCell className="text-right">
+              <RegistrationsDialog event={event} />
               <EditEventDialog event={event} />
             </TableCell>
           </TableRow>
