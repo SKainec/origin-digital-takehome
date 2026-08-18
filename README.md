@@ -8,6 +8,16 @@ frontend/   Marquee Events UI — Vite, React 19, oxlint, Prettier, Vitest,
             TanStack Query, Tailwind v4, shadcn/ui
 ```
 
+## Features
+
+- **Events** — create, list, and update events (title, description, start
+  time, max capacity).
+- **Registrations** — register or unregister an email for an event, and list
+  who is registered. Enforced business rules: an event cannot be registered
+  for once it has started, cannot exceed its `max_capacity`, and cannot
+  register the same email twice (case-insensitively — addresses are
+  normalized to lowercase).
+
 ## Prerequisites
 
 You need two things installed. Everything else is handled for you.
@@ -223,7 +233,11 @@ in the repository precisely so it becomes `ORDER BY starts_at` when the store is
 a database.
 
 **No authentication**, per the brief. Every endpoint is public and no request
-carries an identity.
+carries an identity. The consequence is sharpest on
+`GET /api/events/{id}/registrations`: anyone who knows or guesses an event id
+can list every attendee's email address, with no login required. Acceptable
+for this exercise, but the one endpoint here where "no auth" means an
+information leak rather than just an unrestricted write.
 
 The repository pattern is what keeps these contained: replacing the dict means
 rewriting one class, with the service, routers, and tests untouched.
