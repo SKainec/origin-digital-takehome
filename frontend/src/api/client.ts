@@ -7,17 +7,45 @@ const BASE_URL = import.meta.env['VITE_API_URL'] ?? '';
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string | undefined;
+  /** Wire field name to message, present only for validation failures. */
+  readonly fieldErrors: Record<string, string> | undefined;
 
-  constructor(message: string, status: number, code?: string) {
+  constructor(
+    message: string,
+    status: number,
+    code?: string,
+    fieldErrors?: Record<string, string>,
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.fieldErrors = fieldErrors;
   }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+/**
+ * FastAPI reports validation failures as a list of `{loc, msg}`, where `loc` is a
+ * path like `["body", "max_capacity"]` — the last segment is the offending field.
+ */
+function toFieldErrors(detail: readonly unknown[]): Record<string, string> {
+  const fieldErrors: Record<string, string> = {};
+
+  for (const entry of detail) {
+    if (!isRecord(entry)) continue;
+    const { loc, msg } = entry;
+    if (!Array.isArray(loc) || typeof msg !== 'string') continue;
+
+    const field = loc.at(-1);
+    if (typeof field !== 'string') continue;
+    fieldErrors[field] ??= msg;
+  }
+
+  return fieldErrors;
 }
 
 /**
@@ -37,6 +65,13 @@ async function toApiError(response: Response, path: string): Promise<ApiError> {
   if (!isRecord(payload)) return new ApiError(fallback, response.status);
 
   const { detail, code } = payload;
+
+  if (Array.isArray(detail)) {
+    const fieldErrors = toFieldErrors(detail);
+    const [first] = Object.values(fieldErrors);
+    return new ApiError(first ?? fallback, response.status, undefined, fieldErrors);
+  }
+
   return new ApiError(
     typeof detail === 'string' ? detail : fallback,
     response.status,

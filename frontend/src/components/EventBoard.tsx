@@ -1,6 +1,7 @@
 import { ApiError } from '@/api/client';
 import { useEvents } from '@/api/events';
 import { AddEventDialog } from '@/components/AddEventDialog';
+import { EditEventDialog } from '@/components/EditEventDialog';
 import {
   Table,
   TableBody,
@@ -30,20 +31,23 @@ export function EventBoard() {
           <TableHead className="font-heading text-xs tracking-wide uppercase">Event</TableHead>
           <TableHead className="font-heading text-xs tracking-wide uppercase">Capacity</TableHead>
           <TableHead className="font-heading text-xs tracking-wide uppercase">Status</TableHead>
+          <TableHead>
+            <span className="sr-only">Actions</span>
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {isPending &&
           Array.from({ length: SKELETON_ROWS }, (_, index) => (
             <TableRow key={index} aria-hidden={index > 0}>
-              <TableCell colSpan={4} role={index === 0 ? 'status' : undefined}>
+              <TableCell colSpan={5} role={index === 0 ? 'status' : undefined}>
                 {index === 0 ? 'Loading events…' : <>&nbsp;</>}
               </TableCell>
             </TableRow>
           ))}
         {data?.length === 0 && (
           <TableRow>
-            <TableCell colSpan={4}>No events yet.</TableCell>
+            <TableCell colSpan={5}>No events yet.</TableCell>
           </TableRow>
         )}
         {data?.map((event) => (
@@ -54,12 +58,15 @@ export function EventBoard() {
             <TableCell>{event.title}</TableCell>
             <TableCell className="font-mono tabular-nums">{event.maxCapacity}</TableCell>
             <TableCell>—</TableCell>
+            <TableCell className="text-right">
+              <EditEventDialog event={event} />
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
       <TableFooter>
         <TableRow>
-          <TableCell colSpan={4} className="bg-transparent">
+          <TableCell colSpan={5} className="bg-transparent">
             <AddEventDialog />
           </TableCell>
         </TableRow>

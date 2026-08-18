@@ -3,7 +3,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { renderHook } from '@/test/render';
 
-import { createEvent, listEvents, updateEvent, useEvents } from './events';
+import { ApiError } from './client';
+import {
+  createEvent,
+  eventErrorMessage,
+  eventFieldErrors,
+  listEvents,
+  updateEvent,
+  useEvents,
+} from './events';
 
 const ID = '11111111-1111-4111-8111-111111111111';
 
@@ -112,6 +120,57 @@ describe('updateEvent', () => {
       },
     });
     expect(updated.title).toBe('Latte art championship');
+  });
+});
+
+describe('eventFieldErrors', () => {
+  it('maps the wire field names a validation failure reports to form fields', () => {
+    const error = new ApiError('nope', 422, undefined, {
+      title: 'String should have at least 1 character',
+      starts_at: 'Input should have timezone info',
+      max_capacity: 'Input should be greater than or equal to 1',
+    });
+
+    expect(eventFieldErrors(error)).toEqual({
+      title: 'String should have at least 1 character',
+      startsAt: 'Input should have timezone info',
+      maxCapacity: 'Input should be greater than or equal to 1',
+    });
+  });
+
+  it('has nothing to report for a failure that is not a validation error', () => {
+    expect(eventFieldErrors(new ApiError('gone', 404))).toBeUndefined();
+    expect(eventFieldErrors(new Error('offline'))).toBeUndefined();
+    expect(eventFieldErrors(null)).toBeUndefined();
+  });
+
+  it('has nothing to report when the failure names no field this form owns', () => {
+    const modelLevel = new ApiError('nope', 422, undefined, {
+      body: 'Value error, the event must end after it starts',
+    });
+
+    expect(eventFieldErrors(modelLevel)).toBeUndefined();
+  });
+});
+
+describe('eventErrorMessage', () => {
+  it('gives the API its own wording for a failure no field owns', () => {
+    expect(eventErrorMessage(new ApiError('the event store is unavailable', 503))).toBe(
+      'the event store is unavailable',
+    );
+  });
+
+  it('falls back to its own wording when the failure came from the network', () => {
+    expect(eventErrorMessage(new TypeError('Failed to fetch'))).toBe(
+      'Something went wrong. Please try again.',
+    );
+  });
+
+  it('stays quiet when there is no failure, or the fields already explain it', () => {
+    expect(eventErrorMessage(null)).toBeUndefined();
+    expect(
+      eventErrorMessage(new ApiError('nope', 422, undefined, { title: 'too short' })),
+    ).toBeUndefined();
   });
 });
 
